@@ -1,0 +1,12 @@
+[submodule "contrib/crgl"]
+	path = contrib/crgl
+	url = https://github.com/CristianoBeato/crglLib.git
+[submodule "contrib/SDL3PP"]
+	path = contrib/SDL3PP
+	url = https://github.com/CristianoBeato/SDL3PlusPlus.git
+[submodule "contrib/glm"]
+	path = contrib/glm
+	url = https://github.com/g-truc/glm.git
+[submodule "contrib/json"]
+	path = contrib/json
+	url = https://github.com/nlohmann/json.git
