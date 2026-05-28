@@ -17,6 +17,8 @@ set( CMAKE_CXX_STANDARD 20 )
 find_package( SDL3 REQUIRED CONFIG )
 include_directories( SDL3::Headers )
 
+add_subdirectory( ${CMAKE_SOURCE_DIR}/contrib/crgl/lib )
+
 ##
 ## set the engine source root path
 ##
@@ -29,6 +31,8 @@ set( ENGINE_SOURCES
 	${CMAKE_SOURCE_DIR}/source/precompiled.hpp
 	${CMAKE_SOURCE_DIR}/source/AppMain.cpp
 	${CMAKE_SOURCE_DIR}/source/AppMain.hpp
+	${CMAKE_SOURCE_DIR}/source/Video.cpp
+	${CMAKE_SOURCE_DIR}/source/Video.hpp
 	${CMAKE_SOURCE_DIR}/source/structures/atributos.cpp
 	${CMAKE_SOURCE_DIR}/source/structures/atributos.hpp
 	${CMAKE_SOURCE_DIR}/source/structures/classes.cpp
@@ -37,7 +41,7 @@ set( ENGINE_SOURCES
 	${CMAKE_SOURCE_DIR}/source/structures/personagens.hpp
 	)
 
-set( LIBRARIES SDL3::SDL3 )
+set( LIBRARIES SDL3::SDL3 crglLib )
 
 add_executable( RPGDash ${ENGINE_SOURCES} )
 target_link_libraries( RPGDash PRIVATE ${LIBRARIES} )

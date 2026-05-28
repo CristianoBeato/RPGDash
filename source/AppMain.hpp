@@ -14,6 +14,8 @@ TODO: Reference to licence
 #ifndef __APP_MAIN_HPP__
 #define __APP_MAIN_HPP__
 
+#include <SDL3/SDL_window.hpp>
+
 class crAppMain
 {
 public:
@@ -21,11 +23,12 @@ public:
     ~crAppMain( void );
     void    Run( void );
 
+    void    Events( void );
+    void    Renderer( void );
+
 private:
-    int32_t     m_state;
-
-    
-
+    int32_t         m_state;
+    SDL::Window     m_window;
 };
 
 #endif //!__APP_MAIN_HPP__

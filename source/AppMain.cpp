@@ -38,16 +38,38 @@ crAppMain::crAppMain( void )
     // Inicializa a biblioteca SDL3
     if ( !SDL_Init( SDL_INIT_AUDIO | SDL_INIT_VIDEO | SDL_INIT_EVENTS ) )
         throw std::runtime_error( SDL_GetError() );
-    
+
+    if( !m_window.Create( "RPGDash", 1024, 768, SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE ) )
+        throw std::runtime_error( SDL_GetError() );
+
 }
 
 crAppMain::~crAppMain( void )
 {
+    if( m_window )
+        m_window.Destroy();
 
     // libera biblioteca SDL
     SDL_Quit();
 }
 
 void crAppMain::Run(void)
+{
+    while ( m_state )
+    {
+        // lida com as entradas
+        Events();
+
+        // renderiza 
+        Renderer();
+    }
+    
+}
+
+void crAppMain::Events(void)
+{
+}
+
+void crAppMain::Renderer(void)
 {
 }
