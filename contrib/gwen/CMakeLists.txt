@@ -200,5 +200,7 @@ set( GWEN_SOURCE
 )
 
 add_library( Gwen STATIC ${GWEN_SOURCE} )
+target_include_directories( Gwen PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}" )
+target_include_directories( Gwen PRIVATE "${CMAKE_SOURCE_DIR}/contrib/crgl/include" )
 target_compile_definitions( Gwen PRIVATE GWEN_COMPILE_STATIC )
 target_precompile_headers( Gwen PUBLIC "$<$<COMPILE_LANGUAGE:CXX>:${CMAKE_CURRENT_SOURCE_DIR}/Gwen/Precompiled.h>" )

@@ -18,6 +18,7 @@ find_package( SDL3 REQUIRED CONFIG )
 include_directories( SDL3::Headers )
 
 add_subdirectory( ${CMAKE_SOURCE_DIR}/contrib/crgl/lib )
+add_subdirectory( ${CMAKE_SOURCE_DIR}/contrib/gwen )
 
 ##
 ## set the engine source root path

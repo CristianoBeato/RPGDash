@@ -81,8 +81,8 @@ namespace Gwen
 				gl::Buffer			m_vertexBuffer;
 				gl::Buffer			m_elementBuffer;
 				gl::Buffer			m_uniformBuffer;
-				gl::Image			m_white;
-				gl::Image			m_fontImage;				
+				gl::Texture			m_white;
+				gl::Texture			m_fontImage;				
 				gl::Sampler			m_sample;
 				gl::Sampler			m_fontSample;
 				GLushort*			m_elements;

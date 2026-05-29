@@ -30,7 +30,7 @@ struct glyph_t
 
 struct  renderFont_t
 {
-    gl::Image   texture;
+    gl::Texture   texture;
 	int			h = 0;	
 	glyph_t     glyphs[256];
 };
@@ -38,7 +38,7 @@ struct  renderFont_t
 struct renderFrameBuffer_t
 {
 	gl::FrameBuffer		frameBuffer;
-	gl::Image			renderImage;
+	gl::Texture			renderImage;
 };
 
 static int ReadShaderSource( const char* path, char** source )
@@ -273,7 +273,7 @@ void Gwen::Renderer::OpenGL::DrawTexturedRect( Gwen::Texture* pTexture, Gwen::Re
 		return;
 	}
 
-	gl::Image* tex = static_cast<gl::Image*>( pTexture->data );
+	gl::Texture* tex = static_cast<gl::Texture*>( pTexture->data );
 	if ( m_mode != RECT_TEXTURED )
 	{
 		Flush();
@@ -462,9 +462,28 @@ void Gwen::Renderer::OpenGL::LoadFont( Gwen::Font *pFont )
 	pFont->data = std::malloc( sizeof( renderFont_t ) );
 
 	// create and upload texture
-	static_cast<renderFont_t*>( pFont->data )->texture = gl::Image();
-	static_cast<renderFont_t*>( pFont->data )->texture.Create( static_cast<gl::Image::target_t>( GL_TEXTURE_2D ), GL_RGBA8, 1, 1, { 512, 512, 0 });
-	static_cast<renderFont_t*>( pFont->data )->texture.SubImage( 0, { 0, 0, 0 }, { 512, 512, 0}, atlas->pixels );
+	static_cast<renderFont_t*>( pFont->data )->texture = gl::Texture();
+	
+	// alloc font atlas image
+	gl::Texture::createInfo_t fontAtlas{};
+	fontAtlas.target = GL_TEXTURE_2D;
+	fontAtlas.levels = 1;
+	fontAtlas.layers = 1;
+	fontAtlas.samples = 1;
+	fontAtlas.format = GL_RGBA8;
+	fontAtlas.dimensions.width = 512;
+	fontAtlas.dimensions.height = 512;
+	fontAtlas.dimensions.depth = 1;
+	static_cast<renderFont_t*>( pFont->data )->texture.Create( &fontAtlas );
+	
+	gl::Texture::subImage_t	fontSubimage{};
+	fontSubimage.level = 0;
+	fontSubimage.layer = 0;
+	fontSubimage.imageSize = 512 * 512 * 4;
+	fontSubimage.offsets = { 0, 0, 0 };
+	fontSubimage.dimension = { 512, 512, 1 };
+	static_cast<renderFont_t*>( pFont->data )->texture.SubImage( &fontSubimage, atlas->pixels );
+	
 	static_cast<renderFont_t*>( pFont->data )->h = TTF_GetFontHeight( font );
 
 	// copy the glyphs
@@ -496,8 +515,8 @@ void Gwen::Renderer::OpenGL::FreeFont(Gwen::Font *pFont)
 void Gwen::Renderer::OpenGL::LoadTexture(Gwen::Texture *pTexture)
 {
 	GLenum internalFormat = 0;
-	gl::Image::dimensions_t	dim{};
-	gl::Image::offsets_t pos{};
+	gl::Texture::dimensions_t	dim{};
+	gl::Texture::offsets_t pos{};
 	
 	const char* fileName = pTexture->name.Get().c_str();
 
@@ -558,7 +577,7 @@ void Gwen::Renderer::OpenGL::LoadTexture(Gwen::Texture *pTexture)
 	}
 
 	// Create a little texture pointer..
-	pTexture->data = new gl::Image();
+	pTexture->data = new gl::Texture();
 	
 	// Sort out our GWEN texture
 	pTexture->width = image->w;
@@ -569,8 +588,16 @@ void Gwen::Renderer::OpenGL::LoadTexture(Gwen::Texture *pTexture)
 	dim.width = image->w;
 	dim.height = image->h;
 
-	reinterpret_cast<gl::Image*>( pTexture->data )->Create( GL_TEXTURE_2D, internalFormat, 1, 1, dim );
-	reinterpret_cast<gl::Image*>( pTexture->data )->SubImage( 0, { 0, 0, 0}, dim,  image->pixels, false );
+	gl::Texture::createInfo_t imageCI{};
+	imageCI.target = GL_TEXTURE_2D;
+	imageCI.levels = 0;
+	imageCI.layers = 0;
+	imageCI.samples = 1;
+	imageCI.format = internalFormat;
+	imageCI.dimensions = { image->w, image->h, 1 };
+
+	reinterpret_cast<gl::Texture*>( pTexture->data )->Create( imageCI );
+	reinterpret_cast<gl::Texture*>( pTexture->data )->SubImage( 0, { 0, 0, 0}, dim,  image->pixels, false );
 
 	SDL_DestroySurface( image );
 	image = nullptr;
@@ -579,7 +606,7 @@ void Gwen::Renderer::OpenGL::LoadTexture(Gwen::Texture *pTexture)
 
 void Gwen::Renderer::OpenGL::FreeTexture( Gwen::Texture* pTexture )
 {
-	gl::Image* tex = static_cast<gl::Image*>( pTexture->data );
+	gl::Texture* tex = static_cast<gl::Texture*>( pTexture->data );
 
 	if ( !tex )
 		return;
@@ -600,7 +627,13 @@ void Gwen::Renderer::OpenGL::CreateFrameBuffer(Gwen::FrameBuffer *pFrameBuffer)
 	static_cast<renderFrameBuffer_t*>( pFrameBuffer->data )->frameBuffer.Create();
 
 	// create a 2d image
-	static_cast<renderFrameBuffer_t*>( pFrameBuffer->data )->renderImage.Create( GL_TEXTURE_2D, GL_RGBA8, 1, 1, { pFrameBuffer->width, pFrameBuffer->height, 0 } );
+	gl::Texture::createInfo_t imageCI{};
+	imageCI.target = GL_TEXTURE_2D;
+	imageCI.levels = 0;
+	imageCI.layers = 0;
+	imageCI.samples = 1;
+	imageCI.format = GL_RGBA8;
+	imageCI.dimensions = { pFrameBuffer->width, pFrameBuffer->height, 1 };
 
 	// attach our texture to frame buffer
 	gl::FrameBuffer::attachament_t attachament{};
@@ -721,9 +754,9 @@ void Gwen::Renderer::OpenGL::DrawFrameBuffer( Gwen::FrameBuffer *pFrameBuffer, G
 
 Gwen::Color Gwen::Renderer::OpenGL::PixelColour( Gwen::Texture* pTexture, unsigned int x, unsigned int y, const Gwen::Color & col_default )
 {
-	gl::Image::dimensions_t dim{};
-	gl::Image::offsets_t	off{};
-	gl::Image* tex = static_cast<gl::Image*>( pTexture->data );
+	gl::Texture::dimensions_t dim{};
+	gl::Texture::offsets_t	off{};
+	gl::Texture* tex = static_cast<gl::Texture*>( pTexture->data );
 	if ( !tex ) 
 		return col_default;
 
@@ -909,14 +942,26 @@ void Gwen::Renderer::OpenGL::CreateSamplers(void)
 	/// Createa a white image whit size 16 x 16
 	///
 	uint16_t image[16 * 16 * 4];
-	gl::Image::dimensions_t dim{ 16, 16, 0 };
-	gl::Image::offsets_t	off{ 0, 0, 0};
 
 	// make a full white image
 	std::memset( image, 0xFF, 16 * 16 * 4 );
 
-	m_white.Create( (gl::Image::target_t)GL_TEXTURE_2D, GL_RGBA8, 1, 1, dim );
-	m_white.SubImage( 0, off, dim, image, false );
+	gl::Texture::createInfo_t textureCI{};
+	textureCI.target = GL_TEXTURE_2D;
+	textureCI.levels = 1;
+	textureCI.layers = 1;
+	textureCI.samples = 1;
+	textureCI.format = GL_RGBA8;
+	textureCI.dimensions = { 16, 16, 0 };
+	m_white.Create( &textureCI );
+
+	gl::Texture::subImage_t wim{};
+	wim.level = 0;
+	wim.layer = 0;
+	wim.imageSize = 16 * 16 * 4; 
+	wim.offsets = { 0, 0, 0 };
+	wim.dimension = { 16, 16, 1 };
+	m_white.SubImage( &wim, image );
 
 	m_sample.Create();
 	m_sample.Parameteri( GL_TEXTURE_MIN_FILTER, GL_LINEAR );
@@ -933,7 +978,7 @@ void Gwen::Renderer::OpenGL::CreateVertexArray(void)
 	///
 	/// Create Vertex Array and configure vertex attributes 
 	///
-	gl::vertexAttrib_t	attrbs[2]
+	gl::VertexArray::vertexAttrib_t	attrbs[2]
 	{
 		{ 0, 0, 2, GL_FLOAT, GL_FALSE, 0},
 		{ 1, 0, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 2 }
@@ -941,10 +986,11 @@ void Gwen::Renderer::OpenGL::CreateVertexArray(void)
 
 	m_vertexArray.Create( attrbs, 2 );
 	
-	GLintptr offset = 0;
-	GLsizei stride = k_VERTEX_SIZE;
-	GLuint vbo = m_vertexBuffer;
-	m_vertexArray.BindeVertexBuffers( &vbo, &offset, &stride, 0, 1 );
+	gl::VertexArray::bufferBindingPoint_t binding{};
+	binding.buffer = m_vertexBuffer;
+	binding.offset = 0;
+	binding.stride = k_VERTEX_SIZE;
+	m_vertexArray.BindeVertexBuffers( &binding, 0, 1 );
 	m_vertexArray.BindElementBuffer( m_elementBuffer );
 }
 
